@@ -1,0 +1,143 @@
+---
+output: "pdf_document"
+editor_options: 
+  chunk_output_type: console
+urlcolor: blue
+fontsize: 12pt
+header-includes:
+- \usepackage{caption}
+- \captionsetup[figure]{labelformat=empty}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  comment = "#", 
+  cache = FALSE,  
+  collapse = TRUE,
+  error = TRUE,
+  tidy.opts=list(width.cutoff=65)
+)
+```
+
+# CSI 2300: Intro to Data Science
+
+## In-Class Exercise 19: Modeling -- Simple Linear Regression
+
+For this lecture, we'll return to a dataset we've used before; the COVID dataset
+from the Colorado Department of Public Health and Environment
+(CDPHE)^[https://cdphe.maps.arcgis.com/apps/opsdashboard/index.html#/d79cf93c3938470ca4bcc4823328946b].
+If you want to refer back, we used this dataset in both lectures 3 and 15.
+
+1. Load the data.
+
+   - Load in the dataset from the CSV file
+     `CDPHE_COVID19_Wastewater_Dashboard_Data.csv`.
+   - Rename the column `SARS_CoV_2_copies_L` to `sars_rna`, and rename the
+     column `Number_of_New_COVID19_Cases_by_` to `cases`.
+   - Remove the observations that have value `NA` for `sars_rna`, that have the
+     value 0 for `sars_rna` or that have the value 0 for `cases`.
+   - Add two columns that represent the logarithm of `sars_rna` and the
+     logarithm of `cases`. ($\log(0) = -\infty$, which is why we removed the
+     zero-cases in the previous step.)
+```{r}
+Covid_data = read.csv("CDPHE_COVID19_Wastewater_Dashboard_Data.csv")
+
+colnames(Covid_data)[3]="sars_rna"
+colnames(Covid_data)[4]="cases"
+
+
+
+Covid_data=Covid_data[!is.na(Covid_data$sars_rna), ]
+Covid_data=Covid_data[!(Covid_data$sars_rna==0), ]
+Covid_data=Covid_data[!(Covid_data$sars_rna==0), ]
+
+log_sars= log(Covid_data$sars_rna)
+log_cases=log(Covid_data$cases)
+
+
+Covid_data=cbind(Covid_data, log_sars, log_cases)
+```
+
+
+
+2. Make a scatter plot with the log of the number of cases and the log of the number of SARS CoV-2 RNA
+   copies. Use good labels. Which do you think should be the independent
+   variable, and which should be the dependent variable? Why do you think that?
+```{r}
+
+plot(Covid_data$log_sars, Covid_data$log_cases, main = "",
+     xlab = "Log sars", ylab = "Covid cases")
+
+plot(Covid_data$cases~Covid_data$log_sars)
+
+
+```
+>The Dependent is thee Covid cases ad the independent is the sars data.
+
+3. Fit a linear model using `lm()` for the same data you just plotted. Save the
+   model returned by `lm()` in a variable so you can investigate it further.
+   Overlay the fitted model's line using `abline()`. 
+```{r}
+#abline(lm(Covid_data$cases ~ Covid_data$log_sars, data = Covid_data), col = "blue")
+
+pl_lm= lm(Covid_data$cases ~ Covid_data$log_sars, data=Covid_data)
+abline(pl_lm, col="green")
+```
+
+
+4. Investigate the fit of the model.
+
+    - Does it *look* like a good fit?
+    - What is the value of $R^2$ (you can use the one called "multiple $R^2$")?
+      Is that good or bad (or can you tell)?
+    - Are the two coefficients of the  model significant?
+    - Explain what the two coefficients mean (including their sign -- positive
+      or negative).
+>It does look like a good fit. It looks like it represents most of the vcalues.
+
+>.362 is the r squared value. The R value is pretty low. 
+The data seems to follow the trend, but doenst match the r value meaning the data isnt following the R squared due to not be close to 1.
+
+>The intercept coefficient being negative is a result of the line not being the best fit for the data
+>The positive coeficient means positive slope and a negative coefficient means negative slope.
+>Seems like the data has a positive coefficient meaning it has a positive slope.
+
+
+```{r}
+summary(pl_lm)
+```
+
+
+5. Calculate the residuals of your model. Then analyze them:
+
+    - Compute the mean (average) of the residuals. What is it close to? What
+      that imply?
+    - Show a scatter plot of residuals (y-axis) and date
+      (x-axis). What can you learn from this plot? (Hint:  don't forget to use `lubridate` for the dates.)
+    - Show a scatter plot of residuals (y-axis) and log of rna
+      (x-axis).  What can you learn from this plot?
+
+
+```{r}
+library(lubridate)
+
+res= mean(pl_lm$residuals)
+plot(mdy(Covid_data$Date), pl_lm$residuals)
+plot(Covid_data$log_sars, pl_lm$residuals)
+
+```
+>the mean resididual is showing that it is close to zero, meaning that the data is similar. The line is a good fit, valuable data.
+
+>First plot is good, it is random and is scattered throught the plot. This is the best model to use.
+
+>The second plot is showing that there is a clear problem. The log is taking the log of the 0 value and it is making it look like it has a pattern which isnt good.
+
+
+6. Explain whether this model is useful. If you think it is useful: for what
+   purpose is it useful, and for whom? If you do not think it is useful: why
+   not?
+
+>The regular model we made in the beginnig, with the log sars and log cases was helpful in looking for potential scientists.
+>The residual could be useful because it shows a prediction of the line of best fit and could show what the average could be accoriding to the line of best fit and how far that data strays from that line.
+
+
